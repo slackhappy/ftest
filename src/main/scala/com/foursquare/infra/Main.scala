@@ -10,39 +10,20 @@ import com.twitter.util.{Duration, Future}
 import scala.collection.JavaConversions._
 
 object FinagleHttpTestHelper {
-  def serverResponse: HttpResponse = {
-    var res = new DefaultHttpResponse(HttpVersion.HTTP_1_1, OK)
-    res
-  }
-
-  val service: Service[HttpRequest, HttpResponse] = new Service[HttpRequest, HttpResponse] { 
-    def apply(request: HttpRequest) = {
-      try {
-        println("received")
-      } catch {
-        case e => 
-          println("server badness " + e)
-          throw e
-      }
-      val res = Future(serverResponse)
-      res
-    }
-  }
-
-  val address: SocketAddress = new InetSocketAddress("localhost", 10000)                                  
 
 
   def main(args: Array[String]) {
-    val server = ServerBuilder()                            
-    .codec(Http())
-    .bindTo(address)
-    .name("HttpServer")
-    .build(service)
-
-    val cli1 = ClientBuilder().codec(Http()).hosts(address).hostConnectionLimit(1).build()
-    val req1 = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/test")
-    cli1(req1).apply()
-    println("done")
+    val cli1 = ClientBuilder()
+      .codec(Http())
+      .hosts("api.dropbox.com:443")
+      .tlsWithoutValidation()
+      .tcpConnectTimeout(73.milliseconds)
+      .hostConnectionLimit(1).build()
+    val req1 = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/1/oauth/request_token")
+    req1.addHeader("Host", "api.dropbox.com:443")
+    val res = cli1(req1).apply()
+    println(res)
+    cli1.release()
   }
 
 }
